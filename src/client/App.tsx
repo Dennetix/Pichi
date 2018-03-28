@@ -1,14 +1,17 @@
 import * as React from 'react';
 import { render } from 'react-dom';
 
-import Test from './components/Test';
+import Error from './components/Error';
+import Canvas from './components/Canvas';
 
 const App = () => {
     return (
-        <Test/>
+        <div>
+            <Error>
+                <Canvas />
+            </Error>
+        </div>
     );
 };
 
 render(<App />, document.getElementById('app'));
-
-export default App;

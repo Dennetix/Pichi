@@ -10,6 +10,10 @@ class IndexRoute {
     }
 
     private getIndex(req: express.Request, res: express.Response): void {
+        if (req.url.startsWith('/static/')) {
+            res.status(404).send('Error 404: Resource not found!');
+            return;
+        }
         res.render('index');
     }
 

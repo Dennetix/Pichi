@@ -1,0 +1,11 @@
+.wrapper {
+    background: #2E2E33;
+    width: 100vw;
+    height: 100vh;
+}
+
+.error {
+    display: block;
+    width: fit-content;
+    transform: translate(calc(50vw - 50%), 45vh);
+}
