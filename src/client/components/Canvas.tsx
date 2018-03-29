@@ -24,6 +24,10 @@ export default class Canvas extends React.Component {
         this.canvas = document.getElementById('canvas') as HTMLCanvasElement;
         this.canvas.width = window.innerWidth;
         this.canvas.height = window.innerHeight;
+
+        this.canvas.addEventListener('click', () => {
+            this.canvas.requestPointerLock();
+        });
     }
 
     private initWebGL(): void {

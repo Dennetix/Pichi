@@ -1,4 +1,5 @@
 import autobind from 'autobind-decorator';
+import { glMatrix, mat4, quat, vec3 } from 'gl-matrix';
 
 import ErrorStore from '../stores/ErrorStore';
 
@@ -6,8 +7,7 @@ import ResourceLoader from '../engine/utils/ResourceLoader';
 import Shader from '../engine/Shader';
 import Buffer from '../engine/buffers/Buffer';
 import IndexBuffer from '../engine/buffers/IndexBuffer';
-
-import * as glMatrix from 'gl-matrix';
+import Canvas from 'client/components/Canvas';
 
 const vertices = [
     // Top
@@ -80,17 +80,21 @@ export default class GameView3D {
     private vbo: Buffer = Object.create(null);
     private ibo: IndexBuffer = Object.create(null);
 
-    private transformationMatrix = glMatrix.mat4.identity(glMatrix.mat4.create());
-    private viewMatrix = glMatrix.mat4.identity(glMatrix.mat4.create());
-    private projectionMatrix = glMatrix.mat4.identity(glMatrix.mat4.create());
-    
+    private transformationMatrix = mat4.identity(mat4.create());
+    private viewMatrix = mat4.identity(mat4.create());
+    private projectionMatrix = mat4.identity(mat4.create());
+
+    private keys: Map<number, boolean> = new Map<number, boolean>();
+
+    private position: vec3 = vec3.fromValues(0, 0, -5);
+
     constructor(gl: WebGLRenderingContext) {
         this.gl = gl;
 
         this.loadResources()
             .then(() => {
                 this.setup();
-                requestAnimationFrame(this.render);
+                requestAnimationFrame(this.loop);
             })
             .catch(ErrorStore.setError);
     }
@@ -116,30 +120,90 @@ export default class GameView3D {
         this.gl.enableVertexAttribArray(positionAttribLocation);
         this.gl.enableVertexAttribArray(colorAttribLocation);
 
-        glMatrix.mat4.lookAt(this.viewMatrix, [0, 0, -3], [0, 0, 20], [0, 1, 0]);
-        glMatrix.mat4.perspective(this.projectionMatrix, 70 / 180 * Math.PI, window.innerWidth / window.innerHeight, 0.1, 1000);
-
+        mat4.perspective(this.projectionMatrix, 70 / 180 * Math.PI, window.innerWidth / window.innerHeight, 0.1, 1000);
+        
         this.shader.enable(this.gl);
         this.vbo.bind(this.gl);
-
-        this.shader.setUniformMatrix4(this.gl, 'viewMatrix', this.viewMatrix);
-        this.shader.setUniformMatrix4(this.gl, 'projectionMatrix', this.projectionMatrix);
-    }
-
-    private angle: number = 0;
-
-    @autobind
-    private render(): void {
-        this.angle = performance.now() / 1000 / 6 * 2 * Math.PI;
-        glMatrix.mat4.rotate(this.transformationMatrix, glMatrix.mat4.identity(glMatrix.mat4.create()), this.angle, [1, 1, 0]);
-
-        this.gl.clearColor(0.2, 0.2, 0.8, 1);
-        this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
         
         this.shader.setUniformMatrix4(this.gl, 'transformationMatrix', this.transformationMatrix);
+        this.shader.setUniformMatrix4(this.gl, 'viewMatrix', this.viewMatrix);
+        this.shader.setUniformMatrix4(this.gl, 'projectionMatrix', this.projectionMatrix);
+
+        window.addEventListener('resize', this.onWindowResize);
+        document.addEventListener('mousemove', (e) => {
+            if (document.pointerLockElement === document.getElementById('canvas')) {
+                this.yaw += e.movementX / 300;
+                this.pitch += e.movementY / 300;
+            }
+        });
+
+        document.addEventListener('mousewheel', (e) => {
+            this.roll += e.deltaY / 200;
+        });
+
+        document.addEventListener('keydown', (e) => {
+            this.keys.set(e.keyCode, true);
+        });
+
+        document.addEventListener('keyup', (e) => {
+            this.keys.set(e.keyCode, false);
+        });
+    }
+
+    @autobind
+    private loop(): void {
+        this.update();
+        this.render();
+
+        requestAnimationFrame(this.loop);
+    }
+
+    private pitch: number = 0;
+    private yaw: number = 0;
+    private roll: number = 0;
+
+    private update(): void {
+        if (this.keys.get(87)) {
+            this.position[2] += 0.2;
+        }
+        if (this.keys.get(83)) {
+            this.position[2] -= 0.2;
+        }
+        if (this.keys.get(65)) {
+            this.position[0] -= 0.2;
+        }
+        if (this.keys.get(68)) {
+            this.position[0] += 0.2;
+        }
+
+        console.log(this.position);
+    
+        const pitch = quat.setAxisAngle(quat.create(), [1, 0, 0], this.pitch);
+        const yaw = quat.setAxisAngle(quat.create(), [0, 1, 0], this.yaw);
+        const roll = quat.setAxisAngle(quat.create(), [0, 0, 1], this.roll);
+
+        const orientation = quat.mul(quat.create(), quat.mul(quat.create(), pitch, yaw), roll);
+        quat.normalize(orientation, orientation);
+        const rotate = mat4.fromQuat(mat4.create(), orientation);
+
+        const translate = mat4.translate(mat4.create(), mat4.create(), [-this.position[0], this.position[1], this.position[2]]);
+
+        mat4.mul(this.viewMatrix, rotate, translate);
+    }
+
+    private render(): void {
+        this.gl.clearColor(0.18, 0.18, 0.2, 1);
+        this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+        
+        this.shader.setUniformMatrix4(this.gl, 'viewMatrix', this.viewMatrix);
 
         this.gl.drawElements(this.gl.TRIANGLES, indices.length, this.gl.UNSIGNED_SHORT, 0);
+    }
 
-        requestAnimationFrame(this.render);
+    @autobind
+    public onWindowResize(): void {
+        mat4.perspective(this.projectionMatrix, 70 / 180 * Math.PI, window.innerWidth / window.innerHeight, 0.1, 1000);   
+        this.shader.enable(this.gl);
+        this.shader.setUniformMatrix4(this.gl, 'projectionMatrix', this.projectionMatrix);        
     }
 }
