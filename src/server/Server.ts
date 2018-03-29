@@ -3,7 +3,7 @@ import * as bodyParser from 'body-parser';
 import * as logger from 'morgan';
 import * as compression from 'compression';
 
-import indexRoute from './routes/indexRoute';
+import indexRoute from './routes/IndexRoute';
 
 class Server {
 

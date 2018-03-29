@@ -18,7 +18,7 @@
       "^.+\\.tsx?$": "ts-jest"
     },
     "setupFiles": [
-      "<rootDir>/src/test/testSetup.ts"
+      "<rootDir>/src/test/TestSetup.ts"
     ],
     "testRegex": ".*\\.test\\.tsx?$",
     "moduleFileExtensions": [
