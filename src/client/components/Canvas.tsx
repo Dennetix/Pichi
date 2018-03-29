@@ -41,6 +41,10 @@ export default class Canvas extends React.Component {
         console.log(`OpenGL Version: ${this.gl.getParameter(this.gl.VERSION)}`);
         console.log(`GLSL Version: ${this.gl.getParameter(this.gl.SHADING_LANGUAGE_VERSION)}`);
 
+        this.gl.enable(this.gl.DEPTH_TEST);
+        this.gl.enable(this.gl.CULL_FACE);
+        this.gl.cullFace(this.gl.BACK);
+
         this.gl.viewport(0, 0, window.innerWidth, window.innerHeight);
         
         this.gl.clearColor(0.18, 0.18, 0.2, 1);
