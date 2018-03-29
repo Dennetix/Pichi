@@ -5,7 +5,7 @@ import * as styles from './Canvas.css';
 
 import ErrorStore from '../stores/ErrorStore';
 
-import GameView3D from '../gameView3D/GameView3d';
+import GameView3D from '../gameView3D/GameView3D';
 
 export default class Canvas extends React.Component {
     private canvas: HTMLCanvasElement = Object.create(null);

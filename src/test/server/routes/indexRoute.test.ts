@@ -1,5 +1,5 @@
 import * as request from 'supertest';
-import app from 'server/Server';
+import app from 'server/server';
 
 describe('Index Route', () => {
     test('GET', () => {
