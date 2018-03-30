@@ -7,7 +7,8 @@ import ResourceLoader from '../engine/utils/ResourceLoader';
 import Shader from '../engine/Shader';
 import Buffer from '../engine/buffers/Buffer';
 import IndexBuffer from '../engine/buffers/IndexBuffer';
-import Canvas from 'client/components/Canvas';
+
+import FPSCamera from '../engine/FPSCamera';
 
 const vertices = [
     // Top
@@ -80,13 +81,10 @@ export default class GameView3D {
     private vbo: Buffer = Object.create(null);
     private ibo: IndexBuffer = Object.create(null);
 
-    private transformationMatrix = mat4.identity(mat4.create());
-    private viewMatrix = mat4.identity(mat4.create());
-    private projectionMatrix = mat4.identity(mat4.create());
+    private transformationMatrix = mat4.create();
+    private projectionMatrix = mat4.create();
 
-    private keys: Map<number, boolean> = new Map<number, boolean>();
-
-    private position: vec3 = vec3.fromValues(0, 0, -5);
+    private camera: FPSCamera = Object.create(null);
 
     constructor(gl: WebGLRenderingContext) {
         this.gl = gl;
@@ -120,34 +118,17 @@ export default class GameView3D {
         this.gl.enableVertexAttribArray(positionAttribLocation);
         this.gl.enableVertexAttribArray(colorAttribLocation);
 
+        this.camera = new FPSCamera();
+
         mat4.perspective(this.projectionMatrix, 70 / 180 * Math.PI, window.innerWidth / window.innerHeight, 0.1, 1000);
         
         this.shader.enable(this.gl);
         this.vbo.bind(this.gl);
         
         this.shader.setUniformMatrix4(this.gl, 'transformationMatrix', this.transformationMatrix);
-        this.shader.setUniformMatrix4(this.gl, 'viewMatrix', this.viewMatrix);
         this.shader.setUniformMatrix4(this.gl, 'projectionMatrix', this.projectionMatrix);
 
         window.addEventListener('resize', this.onWindowResize);
-        document.addEventListener('mousemove', (e) => {
-            if (document.pointerLockElement === document.getElementById('canvas')) {
-                this.yaw += e.movementX / 300;
-                this.pitch += e.movementY / 300;
-            }
-        });
-
-        document.addEventListener('mousewheel', (e) => {
-            this.roll += e.deltaY / 200;
-        });
-
-        document.addEventListener('keydown', (e) => {
-            this.keys.set(e.keyCode, true);
-        });
-
-        document.addEventListener('keyup', (e) => {
-            this.keys.set(e.keyCode, false);
-        });
     }
 
     @autobind
@@ -158,44 +139,15 @@ export default class GameView3D {
         requestAnimationFrame(this.loop);
     }
 
-    private pitch: number = 0;
-    private yaw: number = 0;
-    private roll: number = 0;
-
     private update(): void {
-        if (this.keys.get(87)) {
-            this.position[2] += 0.2;
-        }
-        if (this.keys.get(83)) {
-            this.position[2] -= 0.2;
-        }
-        if (this.keys.get(65)) {
-            this.position[0] -= 0.2;
-        }
-        if (this.keys.get(68)) {
-            this.position[0] += 0.2;
-        }
-
-        console.log(this.position);
-    
-        const pitch = quat.setAxisAngle(quat.create(), [1, 0, 0], this.pitch);
-        const yaw = quat.setAxisAngle(quat.create(), [0, 1, 0], this.yaw);
-        const roll = quat.setAxisAngle(quat.create(), [0, 0, 1], this.roll);
-
-        const orientation = quat.mul(quat.create(), quat.mul(quat.create(), pitch, yaw), roll);
-        quat.normalize(orientation, orientation);
-        const rotate = mat4.fromQuat(mat4.create(), orientation);
-
-        const translate = mat4.translate(mat4.create(), mat4.create(), [-this.position[0], this.position[1], this.position[2]]);
-
-        mat4.mul(this.viewMatrix, rotate, translate);
+        this.camera.update();
     }
 
     private render(): void {
         this.gl.clearColor(0.18, 0.18, 0.2, 1);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
         
-        this.shader.setUniformMatrix4(this.gl, 'viewMatrix', this.viewMatrix);
+        this.shader.setUniformMatrix4(this.gl, 'viewMatrix', this.camera.getViewMatrix());
 
         this.gl.drawElements(this.gl.TRIANGLES, indices.length, this.gl.UNSIGNED_SHORT, 0);
     }

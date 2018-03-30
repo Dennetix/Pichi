@@ -55,7 +55,7 @@ fs.readdirSync('node_modules')
 
 const serverConfig = {
     mode: debug ? 'development' : 'production',    
-    entry: './src/server/server.ts',
+    entry: './src/server/Server',
     target: 'node',
     output: {
         path: path.resolve(__dirname, './dist/static'),
