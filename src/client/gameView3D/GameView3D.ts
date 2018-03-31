@@ -78,13 +78,13 @@ export default class GameView3D {
     private gl: WebGLRenderingContext;
 
     private shader: Shader = Object.create(null);
+    private camera: FPSCamera = Object.create(null);
+
     private vbo: Buffer = Object.create(null);
     private ibo: IndexBuffer = Object.create(null);
 
     private transformationMatrix = mat4.create();
     private projectionMatrix = mat4.create();
-
-    private camera: FPSCamera = Object.create(null);
 
     constructor(gl: WebGLRenderingContext) {
         this.gl = gl;
@@ -106,6 +106,14 @@ export default class GameView3D {
 
     private setup(): void {
         this.shader = new Shader(this.gl, ResourceLoader.getResource('vertexShaderSource'), ResourceLoader.getResource('fragmentShaderSource'));
+        this.shader.enable(this.gl);
+
+        mat4.perspective(this.projectionMatrix, 60 / 180 * Math.PI, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+        this.shader.setUniformMatrix4(this.gl, 'transformationMatrix', this.transformationMatrix);
+        this.shader.setUniformMatrix4(this.gl, 'projectionMatrix', this.projectionMatrix);
+
+        this.camera = new FPSCamera();
 
         this.vbo = new Buffer(this.gl, new Float32Array(vertices));
         this.ibo = new IndexBuffer(this.gl, new Uint16Array(indices));
@@ -113,27 +121,19 @@ export default class GameView3D {
         const positionAttribLocation = this.shader.getAttribLocation(this.gl, 'vertPosition');
         const colorAttribLocation = this.shader.getAttribLocation(this.gl, 'vertColor');
         this.gl.vertexAttribPointer(positionAttribLocation, 3, this.gl.FLOAT, false, 6 * Float32Array.BYTES_PER_ELEMENT, 0);
-        this.gl.vertexAttribPointer(colorAttribLocation, 3, this.gl.FLOAT, false, 6 * Float32Array.BYTES_PER_ELEMENT,
-             3 * Float32Array.BYTES_PER_ELEMENT);
+        this.gl.vertexAttribPointer(colorAttribLocation, 3, this.gl.FLOAT, false, 6 * Float32Array.BYTES_PER_ELEMENT,3 * Float32Array.BYTES_PER_ELEMENT);
         this.gl.enableVertexAttribArray(positionAttribLocation);
         this.gl.enableVertexAttribArray(colorAttribLocation);
-
-        this.camera = new FPSCamera();
-
-        mat4.perspective(this.projectionMatrix, 70 / 180 * Math.PI, window.innerWidth / window.innerHeight, 0.1, 1000);
-        
-        this.shader.enable(this.gl);
-        this.vbo.bind(this.gl);
-        
-        this.shader.setUniformMatrix4(this.gl, 'transformationMatrix', this.transformationMatrix);
-        this.shader.setUniformMatrix4(this.gl, 'projectionMatrix', this.projectionMatrix);
 
         window.addEventListener('resize', this.onWindowResize);
     }
 
     @autobind
     private loop(): void {
-        this.update();
+        if (document.pointerLockElement === document.getElementById('canvas')) {        
+            this.update();
+        }
+        
         this.render();
 
         requestAnimationFrame(this.loop);
@@ -146,7 +146,7 @@ export default class GameView3D {
     private render(): void {
         this.gl.clearColor(0.18, 0.18, 0.2, 1);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
-        
+
         this.shader.setUniformMatrix4(this.gl, 'viewMatrix', this.camera.getViewMatrix());
 
         this.gl.drawElements(this.gl.TRIANGLES, indices.length, this.gl.UNSIGNED_SHORT, 0);
@@ -155,7 +155,6 @@ export default class GameView3D {
     @autobind
     public onWindowResize(): void {
         mat4.perspective(this.projectionMatrix, 70 / 180 * Math.PI, window.innerWidth / window.innerHeight, 0.1, 1000);   
-        this.shader.enable(this.gl);
-        this.shader.setUniformMatrix4(this.gl, 'projectionMatrix', this.projectionMatrix);        
+        this.shader.setUniformMatrix4(this.gl, 'projectionMatrix', this.projectionMatrix); 
     }
 }

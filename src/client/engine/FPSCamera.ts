@@ -1,5 +1,7 @@
 import { mat4, quat, vec3 } from 'gl-matrix';
 
+import Keyboard from '../engine/utils/Keyboard';
+
 export default class FPSCamera {
     private viewMatrix = mat4.identity(mat4.create());
 
@@ -7,37 +9,60 @@ export default class FPSCamera {
     private yaw: number = 0;
     private roll: number = 0;
 
-    private position: vec3 = vec3.fromValues(0, 0, -5);
+    private position: vec3 = vec3.fromValues(0, 0, 5);
 
     constructor() {
+        this.updateViewMatrix();
+
         document.addEventListener('mousemove', (e) => {
             if (document.pointerLockElement === document.getElementById('canvas')) {
-                this.yaw += e.movementX / 300;
-                this.pitch += e.movementY / 300;
+                this.yaw += e.movementX / 450;
+                this.pitch += e.movementY / 450;
             }
         });
+    }
+
+    public update(): void {
+        if (Keyboard.isKeyPressed(87)) {
+            this.position[0] += Math.sin(this.yaw) * 0.3;
+            this.position[2] -= Math.cos(this.yaw) * 0.3;
+        }
+        if (Keyboard.isKeyPressed(83)) {
+            this.position[0] -= Math.sin(this.yaw) * 0.3;
+            this.position[2] += Math.cos(this.yaw) * 0.3;
+        }
+        if (Keyboard.isKeyPressed(65)) {
+            this.position[0] += Math.sin(this.yaw - Math.PI / 2) * 0.3;
+            this.position[2] -= Math.cos(this.yaw - Math.PI / 2) * 0.3;
+        }
+        if (Keyboard.isKeyPressed(68)) {
+            this.position[0] -= Math.sin(this.yaw - Math.PI / 2) * 0.3;
+            this.position[2] += Math.cos(this.yaw - Math.PI / 2) * 0.3;
+        }
+        if (Keyboard.isKeyPressed(32)) {
+            this.position[1] += 0.3;
+        }
+        if (Keyboard.isKeyPressed(16)) {
+            this.position[1] -= 0.3;
+        }
+
+        this.updateViewMatrix();
     }
 
     public getViewMatrix(): mat4 {
         return this.viewMatrix;
     }
 
-    public update(): void {
-        const pitch = quat.setAxisAngle(quat.create(), [1, 0, 0], this.pitch);
-        const yaw = quat.setAxisAngle(quat.create(), [0, 1, 0], this.yaw);
-        const roll = quat.setAxisAngle(quat.create(), [0, 0, 1], this.roll);
+    private updateViewMatrix(): void {
+        const qRotate = quat.create();
+        quat.rotateX(qRotate, qRotate, this.pitch);
+        quat.rotateY(qRotate, qRotate, this.yaw);
+        quat.rotateZ(qRotate, qRotate, this.roll);
 
-        const orientation = quat.mul(quat.create(), quat.mul(quat.create(), pitch, yaw), roll);
-        quat.normalize(orientation, orientation);
-        const rotate = mat4.fromQuat(mat4.create(), orientation);
+        const mRotate = mat4.fromQuat(mat4.create(), qRotate);
+        const mTranslate = mat4.translate(mat4.create(), mat4.create(), [-this.position[0], -this.position[1], -this.position[2]]);
 
-        const translate = mat4.translate(mat4.create(), mat4.create(), [-this.position[0], this.position[1], this.position[2]]);
-
-        mat4.mul(this.viewMatrix, rotate, translate);
-    }
-
-    public setPosition(x: number, y: number, z: number): void {
-        this.position = vec3.fromValues(x, y, z);
+        mat4.mul(this.viewMatrix, mRotate, mTranslate);
     }
     
 }
