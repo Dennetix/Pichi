@@ -3,6 +3,8 @@ import { mat4, quat, vec3 } from 'gl-matrix';
 import Keyboard from '../engine/utils/Keyboard';
 
 export default class FPSCamera {
+    private readonly speed: number = 0.2;
+
     private viewMatrix = mat4.identity(mat4.create());
 
     private pitch: number = 0;
@@ -24,26 +26,26 @@ export default class FPSCamera {
 
     public update(): void {
         if (Keyboard.isKeyPressed(87)) {
-            this.position[0] += Math.sin(this.yaw) * 0.3;
-            this.position[2] -= Math.cos(this.yaw) * 0.3;
+            this.position[0] += Math.sin(this.yaw) * this.speed;
+            this.position[2] -= Math.cos(this.yaw) * this.speed;
         }
         if (Keyboard.isKeyPressed(83)) {
-            this.position[0] -= Math.sin(this.yaw) * 0.3;
-            this.position[2] += Math.cos(this.yaw) * 0.3;
+            this.position[0] -= Math.sin(this.yaw) * this.speed;
+            this.position[2] += Math.cos(this.yaw) * this.speed;
         }
         if (Keyboard.isKeyPressed(65)) {
-            this.position[0] += Math.sin(this.yaw - Math.PI / 2) * 0.3;
-            this.position[2] -= Math.cos(this.yaw - Math.PI / 2) * 0.3;
+            this.position[0] += Math.sin(this.yaw - Math.PI / 2) * this.speed;
+            this.position[2] -= Math.cos(this.yaw - Math.PI / 2) * this.speed;
         }
         if (Keyboard.isKeyPressed(68)) {
-            this.position[0] -= Math.sin(this.yaw - Math.PI / 2) * 0.3;
-            this.position[2] += Math.cos(this.yaw - Math.PI / 2) * 0.3;
+            this.position[0] -= Math.sin(this.yaw - Math.PI / 2) * this.speed;
+            this.position[2] += Math.cos(this.yaw - Math.PI / 2) * this.speed;
         }
         if (Keyboard.isKeyPressed(32)) {
-            this.position[1] += 0.3;
+            this.position[1] += this.speed;
         }
         if (Keyboard.isKeyPressed(16)) {
-            this.position[1] -= 0.3;
+            this.position[1] -= this.speed;
         }
 
         this.updateViewMatrix();

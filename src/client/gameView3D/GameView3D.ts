@@ -8,44 +8,46 @@ import Shader from '../engine/Shader';
 import Buffer from '../engine/buffers/Buffer';
 import IndexBuffer from '../engine/buffers/IndexBuffer';
 
+import Texture from '../engine/Texture';
+
 import FPSCamera from '../engine/FPSCamera';
 
 const vertices = [
     // Top
-    -1.0, 1.0, -1.0,   0.5, 0.5, 0.5,
-    -1.0, 1.0, 1.0,    0.5, 0.5, 0.5,
-    1.0, 1.0, 1.0,     0.5, 0.5, 0.5,
-    1.0, 1.0, -1.0,    0.5, 0.5, 0.5,
+    -1.0, 1.0, -1.0,   0, 0,
+    -1.0, 1.0, 1.0,    0, 1,
+    1.0, 1.0, 1.0,     1, 1,
+    1.0, 1.0, -1.0,    1, 0,
 
     // Left
-    -1.0, 1.0, 1.0,    0.75, 0.25, 0.5,
-    -1.0, -1.0, 1.0,   0.75, 0.25, 0.5,
-    -1.0, -1.0, -1.0,  0.75, 0.25, 0.5,
-    -1.0, 1.0, -1.0,   0.75, 0.25, 0.5,
+    -1.0, 1.0, 1.0,    0, 0,
+    -1.0, -1.0, 1.0,   1, 0,
+    -1.0, -1.0, -1.0,  1, 1,
+    -1.0, 1.0, -1.0,   0, 1,
 
     // Right
-    1.0, 1.0, 1.0,    0.25, 0.25, 0.75,
-    1.0, -1.0, 1.0,   0.25, 0.25, 0.75,
-    1.0, -1.0, -1.0,  0.25, 0.25, 0.75,
-    1.0, 1.0, -1.0,   0.25, 0.25, 0.75,
+    1.0, 1.0, 1.0,    1, 1,
+    1.0, -1.0, 1.0,   0, 1,
+    1.0, -1.0, -1.0,  0, 0,
+    1.0, 1.0, -1.0,   1, 0,
 
     // Front
-    1.0, 1.0, 1.0,    1.0, 0.0, 0.15,
-    1.0, -1.0, 1.0,    1.0, 0.0, 0.15,
-    -1.0, -1.0, 1.0,    1.0, 0.0, 0.15,
-    -1.0, 1.0, 1.0,    1.0, 0.0, 0.15,
+    1.0, 1.0, 1.0,    1, 1,
+    1.0, -1.0, 1.0,    1, 0,
+    -1.0, -1.0, 1.0,    0, 0,
+    -1.0, 1.0, 1.0,    0, 1,
 
     // Back
-    1.0, 1.0, -1.0,    0.0, 1.0, 0.15,
-    1.0, -1.0, -1.0,    0.0, 1.0, 0.15,
-    -1.0, -1.0, -1.0,    0.0, 1.0, 0.15,
-    -1.0, 1.0, -1.0,    0.0, 1.0, 0.15,
+    1.0, 1.0, -1.0,    0, 0,
+    1.0, -1.0, -1.0,    0, 1,
+    -1.0, -1.0, -1.0,    1, 1,
+    -1.0, 1.0, -1.0,    1, 0,
 
     // Bottom
-    -1.0, -1.0, -1.0,   0.5, 0.5, 1.0,
-    -1.0, -1.0, 1.0,    0.5, 0.5, 1.0,
-    1.0, -1.0, 1.0,     0.5, 0.5, 1.0,
-    1.0, -1.0, -1.0,    0.5, 0.5, 1.0
+    -1.0, -1.0, -1.0,   1, 1,
+    -1.0, -1.0, 1.0,    1, 0,
+    1.0, -1.0, 1.0,     0, 0,
+    1.0, -1.0, -1.0,    0, 1
 ];
 
 const indices = [
@@ -83,6 +85,8 @@ export default class GameView3D {
     private vbo: Buffer = Object.create(null);
     private ibo: IndexBuffer = Object.create(null);
 
+    private texture: Texture = Object.create(null);
+
     private transformationMatrix = mat4.create();
     private projectionMatrix = mat4.create();
 
@@ -100,7 +104,9 @@ export default class GameView3D {
     private loadResources(): Promise<any> {
         return Promise.all([
             ResourceLoader.loadTextFile('vertexShaderSource','/static/shader/vertex.glsl'),
-            ResourceLoader.loadTextFile('fragmentShaderSource','/static/shader/fragment.glsl')
+            ResourceLoader.loadTextFile('fragmentShaderSource','/static/shader/fragment.glsl'),
+
+            ResourceLoader.loadImage('image', '/static/materials/rock/slatecliffrock-Albedo.png')
         ]);
     }
 
@@ -117,13 +123,18 @@ export default class GameView3D {
 
         this.vbo = new Buffer(this.gl, new Float32Array(vertices));
         this.ibo = new IndexBuffer(this.gl, new Uint16Array(indices));
+        this.vbo.bind(this.gl);
+        this.ibo.bind(this.gl);
 
         const positionAttribLocation = this.shader.getAttribLocation(this.gl, 'vertPosition');
-        const colorAttribLocation = this.shader.getAttribLocation(this.gl, 'vertColor');
-        this.gl.vertexAttribPointer(positionAttribLocation, 3, this.gl.FLOAT, false, 6 * Float32Array.BYTES_PER_ELEMENT, 0);
-        this.gl.vertexAttribPointer(colorAttribLocation, 3, this.gl.FLOAT, false, 6 * Float32Array.BYTES_PER_ELEMENT,3 * Float32Array.BYTES_PER_ELEMENT);
+        const texCoordAttribLocation = this.shader.getAttribLocation(this.gl, 'vertTexCoord');
+        this.gl.vertexAttribPointer(positionAttribLocation, 3, this.gl.FLOAT, false, 5 * Float32Array.BYTES_PER_ELEMENT, 0);
+        this.gl.vertexAttribPointer(texCoordAttribLocation, 2, this.gl.FLOAT, false, 5 * Float32Array.BYTES_PER_ELEMENT, 3 * Float32Array.BYTES_PER_ELEMENT);
         this.gl.enableVertexAttribArray(positionAttribLocation);
-        this.gl.enableVertexAttribArray(colorAttribLocation);
+        this.gl.enableVertexAttribArray(texCoordAttribLocation);
+
+        this.texture = new Texture(this.gl, ResourceLoader.getResource('image'));
+        this.texture.bind(this.gl, this.gl.TEXTURE0);
 
         window.addEventListener('resize', this.onWindowResize);
     }
