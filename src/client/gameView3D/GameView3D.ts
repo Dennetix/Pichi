@@ -103,15 +103,16 @@ export default class GameView3D {
 
     private loadResources(): Promise<any> {
         return Promise.all([
-            ResourceLoader.loadTextFile('vertexShaderSource','/static/shader/vertex.glsl'),
-            ResourceLoader.loadTextFile('fragmentShaderSource','/static/shader/fragment.glsl'),
+            ResourceLoader.loadTextResource('vertexShaderSource','/static/shader/vertex.glsl'),
+            ResourceLoader.loadTextResource('fragmentShaderSource','/static/shader/fragment.glsl'),
 
-            ResourceLoader.loadImage('image', '/static/materials/rock/slatecliffrock-Albedo.png')
+            ResourceLoader.loadImage('texture', '/static/materials/rock/slatecliffrock-Albedo.png'),
+            ResourceLoader.loadTextResource('model', '/static/models/somegirl.json')
         ]);
     }
 
     private setup(): void {
-        this.shader = new Shader(this.gl, ResourceLoader.getResource('vertexShaderSource'), ResourceLoader.getResource('fragmentShaderSource'));
+        this.shader = new Shader(this.gl, ResourceLoader.get('vertexShaderSource'), ResourceLoader.get('fragmentShaderSource'));
         this.shader.enable(this.gl);
 
         mat4.perspective(this.projectionMatrix, 60 / 180 * Math.PI, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -133,7 +134,7 @@ export default class GameView3D {
         this.gl.enableVertexAttribArray(positionAttribLocation);
         this.gl.enableVertexAttribArray(texCoordAttribLocation);
 
-        this.texture = new Texture(this.gl, ResourceLoader.getResource('image'));
+        this.texture = new Texture(this.gl, ResourceLoader.get('texture'));
         this.texture.bind(this.gl, this.gl.TEXTURE0);
 
         window.addEventListener('resize', this.onWindowResize);
